@@ -1,28 +1,30 @@
+#include <Transformation.hpp>
 #include <motion/BallMotion.hpp>
 
 using namespace godot;
 
 void BallMotion::_register_methods() {
-  register_method("_process", &BallMotion::_process);
-  register_property<BallMotion, float>("speed", &BallMotion::speed, 3.0);
+  register_method("_ready", &BallMotion::_ready);
+  register_method("_physics_process", &BallMotion::_physics_process);
+  register_method("on_new_position", &BallMotion::on_new_position);
 }
 
-BallMotion::BallMotion() noexcept
-    : dispatcher{{{{{3.4, 4}},
-                  {{-4.985, -16.543}},
-                  {{13.54, 0}},
-                  {{-13.496, 10.402}},
-                  {{-6.861, 16.122}},
-                  {{-0.699, -27.976}}}},
-                 speed, 0.2f} {}
+BallMotion::BallMotion() noexcept {}
 
-void BallMotion::_init() {
-  speed = 3.0;
-  transform = get_transform();
+void BallMotion::_init() { transform = get_transform(); }
+
+void BallMotion::_ready() {
+  get_node(NodePath("../../../Table"))
+      ->connect("on_ball_position_changed", this, "on_new_position");
 }
 
-void BallMotion::_process(float delta) {
-  if (dispatcher.next_pos(transform.origin.x, transform.origin.z, delta)) {
+void BallMotion::on_new_position(int x, int z) {
+  dispatcher.add(Transformation::transform_x(x),
+                 Transformation::transform_z(z));
+}
+
+void BallMotion::_physics_process(float deltatime) {
+  if (dispatcher.next_pos(transform.origin.x, transform.origin.z, deltatime)) {
     set_transform(transform);
   }
 }
